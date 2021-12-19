@@ -1,1 +1,1 @@
-{:proxy-router.service/proxy-router [:duct/daemon]}
+{:proxy-router.service/default-service [:duct/daemon]}
