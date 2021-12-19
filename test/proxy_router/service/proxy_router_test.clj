@@ -1,7 +1,7 @@
-(ns proxy-router.service.example-test
+(ns proxy-router.service.proxy-router-test
   (:require [clojure.test :refer :all]
             [integrant.core :as ig]
-            [proxy-router.service.example :as example]))
+            [proxy-router.service.proxy-router :as proxy-router]))
 
 (deftest service-test
   ;; FIXME
