@@ -36,15 +36,15 @@
                          (d/success! dest r)))
                      (s/put! dispatcher x))
                    dispatcher)
-    (d/chain dest
-             (fn [c-opt]
-               (tcp/client c-opt))
-             (fn [c]
-               (s/connect dispatcher c)
-               (s/connect c s))
-             (d/catch Exception
-                 #(do (println "whoops, that didn't work:" %)
-                      (s/close! s))))))
+    (-> dest
+        (d/chain (fn [c-opt]
+                   (tcp/client c-opt))
+                 (fn [c]
+                   (s/connect dispatcher c)
+                   (s/connect c s)))
+        (d/catch Exception
+            #(do (println "whoops, that didn't work:" %)
+                 (s/close! s))))))
 
 (defmethod ig/init-key :proxy-router.handler/default-handler
   [_ {:keys [config] :as options}]
