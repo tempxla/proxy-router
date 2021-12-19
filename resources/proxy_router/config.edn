@@ -5,7 +5,12 @@
   {:port    3030
    :handler #ig/ref :proxy-router.handler/default-handler}
 
-  :proxy-router.handler/default-handler {}}
+  :proxy-router.handler/default-handler
+  {:config {:route-table   [{:url-pattern #proxy-router/regex "https?://[^\\.]+\\.5ch\\.net/.*"
+                             :dest-host   "localhost"
+                             :dest-port   8085}]
+            :default-route {:dest-host "localhost"
+                            :dest-port 8085}}}}
 
  :duct.profile/dev   #duct/include "dev"
  :duct.profile/local #duct/include "local"

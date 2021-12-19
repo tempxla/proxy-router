@@ -46,11 +46,7 @@
                  #(do (println "whoops, that didn't work:" %)
                       (s/close! s))))))
 
-(defmethod ig/init-key :proxy-router.handler/default-handler [_ options]
+(defmethod ig/init-key :proxy-router.handler/default-handler
+  [_ {:keys [config] :as options}]
   (fn [s info]
-    (let [config {:route-table   [{:url-pattern #"https?://[^\.]+\.5ch\.net/.*"
-                                   :dest-host   "localhost"
-                                   :dest-port   8085}]
-                  :default-route {:dest-host "localhost"
-                                  :dest-port 8085}}]
-      (handler s info config))))
+    (handler s info config)))
