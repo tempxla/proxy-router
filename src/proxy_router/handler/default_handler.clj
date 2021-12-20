@@ -13,7 +13,6 @@
       (let [[method url proto] (str/split line #" ")]
         (when url
           (println url)
-          (println route-table)
           (if-let [c-opt (reduce (fn [_ {:keys [url-pattern dest-host dest-port]}]
                                    (if (re-find url-pattern url)
                                      (reduced {:host dest-host :port dest-port})))
@@ -25,14 +24,14 @@
               ;; TODO direct-connect
               )))))))
 
-(defn handler [s info config]
+(defn handler [s info routes]
   (println "\n-------------- handler --------------")
   (let [dest       (d/deferred)
         dispatcher (s/stream)]
     (s/connect-via s
                    (fn [x]
                      (when-not (realized? dest)
-                       (when-let [r (solve-dest x config)]
+                       (when-let [r (solve-dest x routes)]
                          (d/success! dest r)))
                      (s/put! dispatcher x))
                    dispatcher)
@@ -47,6 +46,6 @@
                  (s/close! s))))))
 
 (defmethod ig/init-key :proxy-router.handler/default-handler
-  [_ {:keys [config] :as options}]
+  [_ {:keys [routes] :as options}]
   (fn [s info]
-    (handler s info config)))
+    (handler s info routes)))
