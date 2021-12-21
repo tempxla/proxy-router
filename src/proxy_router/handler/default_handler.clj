@@ -4,7 +4,6 @@
             [manifold.deferred :as d]
             [byte-streams :as bs]
             [aleph.tcp :as tcp]
-            [clojure.edn :as edn]
             [clojure.string :as str]))
 
 (defn solve-dest [x {:keys [route-table default-route]}]
@@ -13,11 +12,9 @@
       (let [[method url proto] (str/split line #" ")]
         (when url
           (println url)
-          (if-let [c-opt (reduce (fn [_ {:keys [url-pattern dest-host dest-port]}]
-                                   (if (re-find url-pattern url)
-                                     (reduced {:host dest-host :port dest-port})))
-                                 nil
-                                 route-table)]
+          (if-let [c-opt (some (fn [{:keys [url-pattern dest-host dest-port]}]
+                                 (if (re-find url-pattern url) {:host dest-host :port dest-port}))
+                               route-table)]
             c-opt
             (if-let [{:keys [dest-host dest-port]} default-route]
               {:host dest-host :port dest-port}
@@ -25,7 +22,7 @@
               )))))))
 
 (defn handler [s info routes]
-  (println "\n-------------- handler --------------")
+  ;;(println "\n-------------- handler --------------")
   (let [dest       (d/deferred)
         dispatcher (s/stream)]
     (s/connect-via s
