@@ -6,18 +6,18 @@
             [aleph.tcp :as tcp]
             [clojure.string :as str]))
 
-(defn solve-dest [x {:keys [route-table default-route]}]
+(defn solve-dest [x {:keys [route-table default-dest]}]
   (let [[line] (take 1 (bs/to-line-seq x))]
     (when line
       (let [[method url proto] (str/split line #" ")]
         (when url
           (println url)
-          (if-let [c-opt (some (fn [{:keys [url-pattern dest-host dest-port]}]
-                                 (if (re-find url-pattern url) {:host dest-host :port dest-port}))
+          (if-let [c-opt (some (fn [{:keys [url-pattern dest]}]
+                                 (if (re-find url-pattern url) {:host (:host dest) :port (:port dest)}))
                                route-table)]
             c-opt
-            (if-let [{:keys [dest-host dest-port]} default-route]
-              {:host dest-host :port dest-port}
+            (if-let [{:keys [host port]} default-dest]
+              {:host host :port port}
               ;; TODO direct-connect
               )))))))
 
@@ -33,11 +33,14 @@
                      (s/put! dispatcher x))
                    dispatcher)
     (-> dest
-        (d/chain (fn [c-opt]
-                   (tcp/client c-opt))
+        (d/chain (fn [{:keys [host port] :as c-opt}]
+                   (when-not (nil? host)
+                     (tcp/client c-opt)))
                  (fn [c]
-                   (s/connect dispatcher c)
-                   (s/connect c s)))
+                   (if (nil? c)
+                     (s/close! s)
+                     (do (s/connect dispatcher c)
+                         (s/connect c s)))))
         (d/catch Exception
             #(do (println "whoops, that didn't work:" %)
                  (s/close! s))))))
