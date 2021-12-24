@@ -6,11 +6,16 @@
    :handler #ig/ref :proxy-router.handler/default-handler}
 
   :proxy-router.handler/default-handler
-  {:config {:route-table   [{:url-pattern #proxy-router/regex "https?://[^\\.]+\\.5ch\\.net/.*"
-                             :dest-host   "localhost"
-                             :dest-port   8085}]
-            :default-route {:dest-host "localhost"
-                            :dest-port 8085}}}}
+  {:routes
+   {:route-table
+    [{:url-pattern #proxy-router/regex "http://[^\\.]+\\.5ch\\.net/test/bbs\\.cgi.*"
+      :dest        :direct}
+     {:url-pattern #proxy-router/regex "https?://[^\\.]+\\.5ch\\.net/.*"
+      :dest        {:host "localhost" :port 8085}
+      ;;   :dest        {:host nil :port 8085}
+      }]
+    :default-dest
+    {:host "localhost" :port 8085}}}}
 
  :duct.profile/dev   #duct/include "dev"
  :duct.profile/local #duct/include "local"

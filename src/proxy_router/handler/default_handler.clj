@@ -4,49 +4,60 @@
             [manifold.deferred :as d]
             [byte-streams :as bs]
             [aleph.tcp :as tcp]
-            [clojure.edn :as edn]
             [clojure.string :as str]))
 
-(defn solve-dest [x {:keys [route-table default-route]}]
-  (let [[line] (take 1 (bs/to-line-seq x))]
-    (when line
+(defn solve-host [lines]
+  (some #(if (.startsWith (.toLowerCase %) "host")
+           (let [[_ host port] (str/split % #":")]
+             {:host (str/trim host)
+              :port (if (nil? port) 80 (str/trim port))}))
+        lines))
+
+(defn solve-dest [x {:keys [route-table default-dest]}]
+  (doseq [x (bs/to-line-seq x)]
+    (println "|" x "[" (.length x) "]"))
+  (let [lines (bs/to-line-seq x)]
+    (when-let [line (first lines)]
       (let [[method url proto] (str/split line #" ")]
         (when url
           (println url)
-          (println route-table)
-          (if-let [c-opt (reduce (fn [_ {:keys [url-pattern dest-host dest-port]}]
-                                   (if (re-find url-pattern url)
-                                     (reduced {:host dest-host :port dest-port})))
-                                 nil
-                                 route-table)]
+          (if-let [c-opt (some (fn [{:keys [url-pattern dest]}]
+                                 (if (re-find url-pattern url)
+                                   (if (= dest :direct)
+                                     (solve-host (next lines))
+                                     {:host (:host dest) :port (:port dest)})))
+                               route-table)]
             c-opt
-            (if-let [{:keys [dest-host dest-port]} default-route]
-              {:host dest-host :port dest-port}
+            (if-let [{:keys [host port]} default-dest]
+              {:host host :port port}
               ;; TODO direct-connect
               )))))))
 
-(defn handler [s info config]
-  (println "\n-------------- handler --------------")
+(defn handler [s info routes]
+  ;;(println "\n-------------- handler --------------")
   (let [dest       (d/deferred)
         dispatcher (s/stream)]
     (s/connect-via s
                    (fn [x]
                      (when-not (realized? dest)
-                       (when-let [r (solve-dest x config)]
+                       (when-let [r (solve-dest x routes)]
                          (d/success! dest r)))
                      (s/put! dispatcher x))
                    dispatcher)
-    (d/chain dest
-             (fn [c-opt]
-               (tcp/client c-opt))
-             (fn [c]
-               (s/connect dispatcher c)
-               (s/connect c s))
-             (d/catch Exception
-                 #(do (println "whoops, that didn't work:" %)
-                      (s/close! s))))))
+    (-> dest
+        (d/chain (fn [{:keys [host port] :as c-opt}]
+                   (when-not (nil? host)
+                     (tcp/client c-opt)))
+                 (fn [c]
+                   (if (nil? c)
+                     (s/close! s)
+                     (do (s/connect dispatcher c)
+                         (s/connect c s)))))
+        (d/catch Exception
+            #(do (println "whoops, that didn't work:" %)
+                 (s/close! s))))))
 
 (defmethod ig/init-key :proxy-router.handler/default-handler
-  [_ {:keys [config] :as options}]
+  [_ {:keys [routes] :as options}]
   (fn [s info]
-    (handler s info config)))
+    (handler s info routes)))
