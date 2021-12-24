@@ -6,14 +6,26 @@
             [aleph.tcp :as tcp]
             [clojure.string :as str]))
 
+(defn solve-host [lines]
+  (some #(if (.startsWith (.toLowerCase %) "host")
+           (let [[_ host port] (str/split % #":")]
+             {:host (str/trim host)
+              :port (if (nil? port) 80 (str/trim port))}))
+        lines))
+
 (defn solve-dest [x {:keys [route-table default-dest]}]
-  (let [[line] (take 1 (bs/to-line-seq x))]
-    (when line
+  (doseq [x (bs/to-line-seq x)]
+    (println "|" x "[" (.length x) "]"))
+  (let [lines (bs/to-line-seq x)]
+    (when-let [line (first lines)]
       (let [[method url proto] (str/split line #" ")]
         (when url
           (println url)
           (if-let [c-opt (some (fn [{:keys [url-pattern dest]}]
-                                 (if (re-find url-pattern url) {:host (:host dest) :port (:port dest)}))
+                                 (if (re-find url-pattern url)
+                                   (if (= dest :direct)
+                                     (solve-host (next lines))
+                                     {:host (:host dest) :port (:port dest)})))
                                route-table)]
             c-opt
             (if-let [{:keys [host port]} default-dest]
