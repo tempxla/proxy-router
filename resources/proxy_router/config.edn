@@ -12,12 +12,12 @@
       :dest        :direct}
      {:url-pattern #proxy-router/regex "^http://[^\\.]+\\.5ch\\.net/test/bbs\\.cgi.*"
       :dest        :direct}
-     {:url-pattern #proxy-router/regex "^https?://[^\\.]+\\.5ch\\.net/.*"
+     {:url-pattern #proxy-router/regex "^http://[^\\.]+\\.5ch\\.net/.*"
       :dest        {:host "localhost" :port 8085}
-      ;;   :dest        {:host nil :port 8085}
+      ;; :dest        {:host nil :port 8085}
       }]
     :default-dest
-    {:host "localhost" :port 8085}}}}
+    :direct}}}
 
  :duct.profile/dev   #duct/include "dev"
  :duct.profile/local #duct/include "local"

@@ -5,4 +5,4 @@
 
 (deftest service-test
   ;; FIXME
-  )
+  (= 1 1))

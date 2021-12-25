@@ -9,7 +9,7 @@
 (def custom-readers
   {'proxy-router/regex re-pattern})
 
-(defn solve-host [lines]
+(defn extract-host-port [lines]
   (some #(if (.startsWith (.toLowerCase %) "host")
            (let [[_ host port] (str/split % #":")]
              {:host (str/trim host)
@@ -27,13 +27,13 @@
           (if-let [c-opt (some (fn [{:keys [url-pattern dest]}]
                                  (if (re-find url-pattern url)
                                    (if (= dest :direct)
-                                     (assoc (solve-host (next lines)) :direct? true)
+                                     (assoc (extract-host-port (next lines)) :direct? true)
                                      {:host (:host dest) :port (:port dest)})))
                                route-table)]
             (assoc c-opt :url url)
             ;; url-pattern not found
             (-> (if (= default-dest :direct)
-                  (assoc (solve-host (next lines)) :direct? true)
+                  (assoc (extract-host-port (next lines)) :direct? true)
                   (if-let [{:keys [host port]} default-dest]
                     {:host host :port port}))
                 (assoc :url url))))))))
