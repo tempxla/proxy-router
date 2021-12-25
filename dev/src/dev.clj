@@ -10,7 +10,7 @@
             [integrant.core :as ig]
             [integrant.repl :refer [clear halt go init prep reset]]
             [integrant.repl.state :refer [config system]]
-            [proxy-router.main :refer [custom-readers]]))
+            [proxy-router.handler.default-handler :refer [custom-readers]]))
 
 (duct/load-hierarchy)
 

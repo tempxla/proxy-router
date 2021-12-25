@@ -1,11 +1,9 @@
 (ns proxy-router.main
   (:gen-class)
-  (:require [duct.core :as duct]))
+  (:require [duct.core :as duct]
+            [proxy-router.handler.default-handler :refer [custom-readers]]))
 
 (duct/load-hierarchy)
-
-(def custom-readers
-  {'proxy-router/regex re-pattern})
 
 (defn -main [& args]
   (let [keys     (or (duct/parse-keys args) [:duct/daemon])
