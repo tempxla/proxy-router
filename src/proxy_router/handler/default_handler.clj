@@ -6,9 +6,6 @@
             [aleph.tcp :as tcp]
             [clojure.string :as str]))
 
-(def custom-readers
-  {'proxy-router/regex re-pattern})
-
 (defn extract-host-port [lines]
   (some #(if (.startsWith (.toLowerCase %) "host")
            (let [[_ host port] (str/split % #":")]
