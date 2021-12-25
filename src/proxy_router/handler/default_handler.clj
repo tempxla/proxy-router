@@ -21,6 +21,7 @@
       (let [[method url proto] (str/split line #" ")]
         (when url
           (println url)
+          ;; search url-pattern
           (if-let [c-opt (some (fn [{:keys [url-pattern dest]}]
                                  (if (re-find url-pattern url)
                                    (if (= dest :direct)
@@ -28,10 +29,11 @@
                                      {:host (:host dest) :port (:port dest)})))
                                route-table)]
             c-opt
-            (if-let [{:keys [host port]} default-dest]
-              {:host host :port port}
-              ;; TODO direct-connect
-              )))))))
+            ;; url-pattern not found
+            (if (= default-dest :direct)
+              (solve-host (next lines))
+              (if-let [{:keys [host port]} default-dest]
+                {:host host :port port}))))))))
 
 (defn handler [s info routes]
   ;;(println "\n-------------- handler --------------")
