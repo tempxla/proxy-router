@@ -7,6 +7,17 @@
             [aleph.tcp :as tcp]
             [clojure.string :as str]))
 
+;; (defn response-ok []
+;;   (str/join "\r\n"
+;;             ["HTTP/1.1 200 OK"
+;;              "Server: proxy-router"
+;;              (str "Date: " (.format java.time.format.DateTimeFormatter/RFC_1123_DATE_TIME
+;;                                     (java.time.OffsetDateTime/now java.time.ZoneOffset/UTC)))
+;;              "Content-Type: text/plain"
+;;              "Content-Length: 2"
+;;              ""
+;;              "ok"]))
+
 (defn extract-host-port [lines]
   (some #(if (.startsWith (.toLowerCase %) "host")
            (let [[_ host port] (str/split % #":")]
@@ -36,19 +47,7 @@
                     {:host host :port port}))
                 (assoc :url url))))))))
 
-(defn response-ok []
-  (str/join "\r\n"
-            ["HTTP/1.1 200 OK"
-             "Server: proxy-router"
-             (str "Date: " (.format java.time.format.DateTimeFormatter/RFC_1123_DATE_TIME
-                                    (java.time.OffsetDateTime/now java.time.ZoneOffset/UTC)))
-             "Content-Type: text/plain"
-             "Content-Length: 2"
-             ""
-             "ok"]))
-
-(defn handler [s info routes]
-  ;;(println "\n-------------- handler --------------")
+(defn handler [s info logger routes]
   (let [dest       (d/deferred)
         dispatcher (s/stream)]
     (s/connect-via s
@@ -56,13 +55,12 @@
                      (if (realized? dest)
                        (s/put! dispatcher x)
                        (if-let [r (solve-dest x routes)]
-                         (do (print (:url r) "--> ")
-                             (d/success! dest r)
+                         (do (d/success! dest r)
                              (if (and (:direct? r) (= (:port r) 443))
-                               (do (println "[CONNECT]")
+                               (do (log/info logger ::dispatch (str (:url r) " --> [CONNECT]"))
                                    (s/put! s (bs/to-byte-buffer "HTTP/1.1 200 Connection established\r\n\r\n"))
                                    (d/success-deferred true))
-                               (do (println (str (:host r) ":" (:port r)))
+                               (do (log/info logger ::dispatch (str (:url r) " --> " (str (:host r) ":" (:port r))))
                                    (s/put! dispatcher x))))
                          (s/put! dispatcher x))))
                    dispatcher)
@@ -76,7 +74,7 @@
                      (do (s/connect dispatcher c)
                          (s/connect c s)))))
         (d/catch Exception
-            #(do (println "whoops, that didn't work:" %)
+            #(do (log/error logger ::dispatch (str "whoops, that didn't work: " %))
                  (s/close! s))))))
 
 (defmethod ig/prep-key :proxy-router.handler/default-handler [_ options]
@@ -88,4 +86,4 @@
     (log/log logger :report ::initiated)
     (log/debug logger (with-out-str (newline) (clojure.pprint/pprint routes)))
     (fn [s info]
-      (handler s info routes))))
+      (handler s info logger routes))))
