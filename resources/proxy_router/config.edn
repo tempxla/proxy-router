@@ -2,13 +2,23 @@
  {:duct.core/project-ns proxy-router
 
   :proxy-router.service/default-service
-  {}
+  {:port       3030
+   :handler    #ig/ref :proxy-router.handler/default-handler
+   :app-config #ig/ref :proxy-router/app-config}
+
   :proxy-router.handler/default-handler
-  {}}
+  {:routes
+   {:route-table
+    []
+    :default-dest
+    :direct}
+   :app-config #ig/ref :proxy-router/app-config}
+
+  :proxy-router/app-config {}}
 
  :duct.profile/dev   #duct/include "dev"
  :duct.profile/local #duct/include "local"
- :duct.profile/prod  {}
+ :duct.profile/prod  {:proxy-router/app-config {:filename "proxy-router.edn"}}
 
  :duct.module/logging
  {}}

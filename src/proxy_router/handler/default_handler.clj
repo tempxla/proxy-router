@@ -1,5 +1,6 @@
 (ns proxy-router.handler.default-handler
   (:require [integrant.core :as ig]
+            [duct.logger :as log]
             [manifold.stream :as s]
             [manifold.deferred :as d]
             [byte-streams :as bs]
@@ -78,7 +79,13 @@
             #(do (println "whoops, that didn't work:" %)
                  (s/close! s))))))
 
+(defmethod ig/prep-key :proxy-router.handler/default-handler [_ options]
+  (merge {:logger (ig/ref :duct/logger)} options))
+
 (defmethod ig/init-key :proxy-router.handler/default-handler
-  [_ {:keys [routes] :as options}]
-  (fn [s info]
-    (handler s info routes)))
+  [_ {:keys [logger routes app-config] :as options}]
+  (let [routes (or (get-in app-config [:proxy-router.handler/default-handler :routes]) routes)]
+    (log/log logger :report ::initiated)
+    (log/debug logger (with-out-str (newline) (clojure.pprint/pprint routes)))
+    (fn [s info]
+      (handler s info routes))))
