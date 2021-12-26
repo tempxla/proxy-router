@@ -1,15 +1,13 @@
 (ns proxy-router.handler.default-handler
   (:require [integrant.core :as ig]
+            [duct.logger :as log]
             [manifold.stream :as s]
             [manifold.deferred :as d]
             [byte-streams :as bs]
             [aleph.tcp :as tcp]
             [clojure.string :as str]))
 
-(def custom-readers
-  {'proxy-router/regex re-pattern})
-
-(defn solve-host [lines]
+(defn extract-host-port [lines]
   (some #(if (.startsWith (.toLowerCase %) "host")
            (let [[_ host port] (str/split % #":")]
              {:host (str/trim host)
@@ -27,13 +25,13 @@
           (if-let [c-opt (some (fn [{:keys [url-pattern dest]}]
                                  (if (re-find url-pattern url)
                                    (if (= dest :direct)
-                                     (assoc (solve-host (next lines)) :direct? true)
+                                     (assoc (extract-host-port (next lines)) :direct? true)
                                      {:host (:host dest) :port (:port dest)})))
                                route-table)]
             (assoc c-opt :url url)
             ;; url-pattern not found
             (-> (if (= default-dest :direct)
-                  (assoc (solve-host (next lines)) :direct? true)
+                  (assoc (extract-host-port (next lines)) :direct? true)
                   (if-let [{:keys [host port]} default-dest]
                     {:host host :port port}))
                 (assoc :url url))))))))
@@ -81,7 +79,13 @@
             #(do (println "whoops, that didn't work:" %)
                  (s/close! s))))))
 
+(defmethod ig/prep-key :proxy-router.handler/default-handler [_ options]
+  (merge {:logger (ig/ref :duct/logger)} options))
+
 (defmethod ig/init-key :proxy-router.handler/default-handler
-  [_ {:keys [routes] :as options}]
-  (fn [s info]
-    (handler s info routes)))
+  [_ {:keys [logger routes app-config] :as options}]
+  (let [routes (or (get-in app-config [:proxy-router.handler/default-handler :routes]) routes)]
+    (log/log logger :report ::initiated)
+    (log/debug logger (with-out-str (newline) (clojure.pprint/pprint routes)))
+    (fn [s info]
+      (handler s info routes))))

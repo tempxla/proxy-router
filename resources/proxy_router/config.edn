@@ -2,25 +2,23 @@
  {:duct.core/project-ns proxy-router
 
   :proxy-router.service/default-service
-  {:port    3030
-   :handler #ig/ref :proxy-router.handler/default-handler}
+  {:port       3030
+   :handler    #ig/ref :proxy-router.handler/default-handler
+   :app-config #ig/ref :proxy-router/app-config}
 
   :proxy-router.handler/default-handler
   {:routes
    {:route-table
-    [{:url-pattern #proxy-router/regex "^[^\\.]+\\.5ch\\.net:443"
-      :dest        :direct}
-     {:url-pattern #proxy-router/regex "^http://[^\\.]+\\.5ch\\.net/test/bbs\\.cgi.*"
-      :dest        :direct}
-     {:url-pattern #proxy-router/regex "^https?://[^\\.]+\\.5ch\\.net/.*"
-      :dest        {:host "localhost" :port 8085}
-      ;;   :dest        {:host nil :port 8085}
-      }]
+    []
     :default-dest
-    {:host "localhost" :port 8085}}}}
+    :direct}
+   :app-config #ig/ref :proxy-router/app-config}
+
+  :proxy-router/app-config {}}
 
  :duct.profile/dev   #duct/include "dev"
  :duct.profile/local #duct/include "local"
- :duct.profile/prod  {}
+ :duct.profile/prod  {:proxy-router/app-config {:filename "proxy-router.edn"}}
 
- :duct.module/logging {}}
+ :duct.module/logging
+ {}}
