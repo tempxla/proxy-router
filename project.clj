@@ -1,6 +1,6 @@
-(defproject proxy-router "0.1.0-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+(defproject proxy-router "0.2.0-SNAPSHOT"
+  :description "proxy-router"
+  :url "https://github.com/tempxla/proxy-router"
   :min-lein-version "2.0.0"
   :dependencies [[org.clojure/clojure "1.10.3"]
                  [duct/core "0.8.0"]
