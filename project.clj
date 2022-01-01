@@ -1,4 +1,4 @@
-(defproject proxy-router "0.2.0-SNAPSHOT"
+(defproject proxy-router "0.2.1-SNAPSHOT"
   :description "proxy-router"
   :url "https://github.com/tempxla/proxy-router"
   :min-lein-version "2.0.0"
