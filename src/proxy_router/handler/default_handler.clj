@@ -57,10 +57,10 @@
                        (if-let [r (solve-dest x routes)]
                          (do (d/success! dest r)
                              (if (and (:direct? r) (= (:port r) 443))
-                               (do (log/info logger ::dispatch (str (:url r) " --> [CONNECT]"))
+                               (do (log/info logger :dispatch (str (:url r) " --> [CONNECT]"))
                                    (s/put! s (bs/to-byte-buffer "HTTP/1.1 200 Connection established\r\n\r\n"))
                                    (d/success-deferred true))
-                               (do (log/info logger ::dispatch (str (:url r) " --> " (str (:host r) ":" (:port r))))
+                               (do (log/info logger :dispatch (str (:url r) " --> " (str (:host r) ":" (:port r))))
                                    (s/put! dispatcher x))))
                          (s/put! dispatcher x))))
                    dispatcher)
@@ -74,7 +74,7 @@
                      (do (s/connect dispatcher c)
                          (s/connect c s)))))
         (d/catch Exception
-            #(do (log/error logger ::dispatch (str "whoops, that didn't work: " %))
+            #(do (log/error logger :dispatch (str "whoops, that didn't work: " %))
                  (s/close! s))))))
 
 (defmethod ig/prep-key :proxy-router.handler/default-handler [_ options]
@@ -84,6 +84,6 @@
   [_ {:keys [logger routes app-config] :as options}]
   (let [routes (or (get-in app-config [:proxy-router.handler/default-handler :routes]) routes)]
     (log/log logger :report ::initiated)
-    (log/debug logger (with-out-str (newline) (clojure.pprint/pprint routes)))
+    (log/debug logger :routes (with-out-str (newline) (clojure.pprint/pprint routes)))
     (fn [s info]
       (handler s info logger routes))))
